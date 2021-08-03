@@ -16,15 +16,19 @@ contract AuctionManager is ReentrancyGuard {
         Bid bestBid;
         uint minPrice;
         uint endTimestamp;
-        bool claimed;
         IERC721 token;
+        uint tokenId;
+        bool claimed;
     }
 
     Auction[] public auctionList;
 
+    event AuctionCreated(address indexed seller, uint indexed auctionId, address indexed tokenAddress, uint tokenId);
+
     constructor(){}
 
-    function createAuction(uint minPrice, uint endTimestamp, address tokenAddress) external returns(uint) {
+    function createAuction(uint minPrice, uint endTimestamp, address tokenAddress, uint tokenId) external returns(uint) {
+        require(endTimestamp > block.timestamp, 'auction end timestamp must be in future');
         uint auctionId = auctionList.length;
         auctionList.push(Auction(
             auctionId,
@@ -32,9 +36,12 @@ contract AuctionManager is ReentrancyGuard {
             Bid(payable(address(0)), 0),
             minPrice,
             endTimestamp,
-            false,
-            IERC721(tokenAddress)
+            IERC721(tokenAddress),
+            tokenId,
+            false
         ));
+//        todo, approve token to this smart contract
+        emit AuctionCreated(msg.sender, auctionId, tokenAddress, tokenId);
         return auctionId;
     }
 
