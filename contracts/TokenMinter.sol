@@ -13,7 +13,7 @@ contract TokenMinter is ERC721URIStorage {
     function mintItem(address receiver, string memory tokenURI) public returns (uint256) {
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
-        _mint(receiver, tokenURI);
+        _mint(receiver, newItemId);
         _setTokenURI(newItemId, tokenURI);
         return newItemId;
     }
