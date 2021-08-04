@@ -25,9 +25,13 @@ contract('Auction', (accounts) => {
     const minPrice = web3.utils.toWei('10');
     const endTimestamp = moment('2021-08-05T12:00:00');
     await tokenMinter.mintItem(owner, TOKEN_URL);
-    let results = await auction.createAuction(minPrice, endTimestamp.unix(), tokenMinter.address, 1);
-    let createdAuctionId = results.logs[0].args.auctionId.toString();
-    assert(createdAuctionId === '0');
+    await auction.createAuction(minPrice, endTimestamp.unix(), tokenMinter.address, 1, {from: owner});
+    let firstAuction = await auction.auctionList(0);
+    assert(firstAuction.seller === owner, 'owner not correct');
+    assert(firstAuction.minPrice.toString() === minPrice.toString(), `min price not correct ${firstAuction.minPrice} vs ${minPrice}`);
+    assert(firstAuction.tokenId.toString() === '1', `token id incorrect ${firstAuction.tokenId}`);
+    assert(firstAuction.endTimestamp.toString() === endTimestamp.unix().toString(), 'timestamp incorrect');
+    assert(firstAuction.token === tokenMinter.address, 'token address incorrect');
   });
 
   it('should not create auction with expiration in the past', async () => {
