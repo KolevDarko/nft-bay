@@ -1,4 +1,5 @@
 const {expectRevert} = require('@openzeppelin/test-helpers');
+const timeMachine = require('ganache-time-traveler');
 
 const TokenMinter = artifacts.require('contracts/TokenMinter.sol');
 const Auction = artifacts.require('contracts/AuctionManager.sol');
@@ -7,13 +8,21 @@ const moment = require('moment');
 const TOKEN_URL = 'https://cryptodev.blog'
 
 contract('Auction', (accounts) => {
-  let auctionManager, tokenMinter;
+  let auctionManager, tokenMinter, snapshotId;
   const [owner, buyer] = [accounts[1], accounts[2]];
 
   beforeEach(async () => {
     auctionManager = await Auction.new();
     tokenMinter = await TokenMinter.new();
+
+    let snapshot = await timeMachine.takeSnapshot();
+    snapshotId = snapshot['result'];
   });
+
+  afterEach(async () => {
+    await timeMachine.revertToSnapshot(snapshotId);
+  })
+
 
   it('should mint token', async () => {
     let results = await tokenMinter.mintItem(owner, TOKEN_URL);
@@ -23,7 +32,7 @@ contract('Auction', (accounts) => {
 
   const createAuction = async (options) => {
     options = options || {};
-    const minPrice = options.minPrice || web3.utils.toWei('10');
+    const minPrice = options.minPrice || web3.utils.toWei('1');
     const endTimestamp = options.endTimestamp || moment('2021-08-05T12:00:00');
     await tokenMinter.mintItem(owner, TOKEN_URL);
     const tokenId = 1;
@@ -54,24 +63,14 @@ contract('Auction', (accounts) => {
     )
   })
 
-  const advanceBlockAtTime = (time) => {
-    return new Promise((resolve, reject) => {
-      web3.currentProvider.send(
-          {
-            jsonrpc: "2.0",
-            method: "evm_mine",
-            params: [time],
-            id: new Date().getTime(),
-          },
-          (err, _) => {
-            if (err) {
-              return reject(err);
-            }
-            const newBlockHash = web3.eth.getBlock("latest").hash;
-            return resolve(newBlockHash);
-          },
-      );
-    });
+  const advanceBlockAtTime = async (time) => {
+    await web3.currentProvider.send(
+        {
+          jsonrpc: "2.0",
+          method: "evm_mine",
+          params: [time],
+          id: new Date().getTime(),
+        });
   };
 
   it('should not place bid if incorrect amount provided', async () => {
@@ -96,5 +95,19 @@ contract('Auction', (accounts) => {
         'your bid is smaller than minPrice set by seller'
     );
   });
+
+  it('should not place bid if auction has expired', async () => {
+    const endTimestamp = moment('2021-06-01T00:00:00+00:00').add(10, 'minutes');
+    await createAuction({endTimestamp: endTimestamp});
+    const firstAuction = await auctionManager.auctionList(0);
+    assert(firstAuction.endTimestamp.toString() === endTimestamp.unix().toString(), 'timestamps dont match');
+    const amountBid = web3.utils.toWei('9');
+    await timeMachine.advanceTimeAndBlock(60 * 11);
+    await expectRevert(
+        auctionManager.placeBid(firstAuction.id, amountBid, buyer, {from: buyer, value: amountBid}),
+        'auction finished'
+    );
+  });
+
 
 });
