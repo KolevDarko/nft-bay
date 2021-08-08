@@ -53,6 +53,7 @@ contract AuctionManager is ReentrancyGuard {
         require(amount > a.bestBid.amount, 'your bid is not higher than previous best bid');
         Bid memory prevBestBid = a.bestBid;
         a.bestBid = Bid(bidder, amount);
+        auctionList[auctionId] = a;
         if (prevBestBid.buyer != address(0)){
             refundBid(prevBestBid);
         }

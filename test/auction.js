@@ -33,7 +33,7 @@ contract('Auction', (accounts) => {
   const createAuction = async (options) => {
     options = options || {};
     const minPrice = options.minPrice || web3.utils.toWei('1');
-    const endTimestamp = options.endTimestamp || moment('2021-08-05T12:00:00');
+    const endTimestamp = options.endTimestamp || moment('2021-06-01T00:00:00+00:00');
     await tokenMinter.mintItem(owner, TOKEN_URL);
     const tokenId = 1;
     const creator = options.creator || owner;
@@ -74,7 +74,8 @@ contract('Auction', (accounts) => {
   };
 
   it('should not place bid if incorrect amount provided', async () => {
-    await createAuction();
+    const endTimestamp = moment('2021-08-05T12:00:00');
+    await createAuction({endTimestamp: endTimestamp});
     let firstAuction = await auctionManager.auctionList(0);
     const amount = web3.utils.toWei('10');
     const amountValue = web3.utils.toWei('9');
@@ -109,5 +110,40 @@ contract('Auction', (accounts) => {
     );
   });
 
+  it('should place bid', async () => {
+    const endTimestamp = moment('2021-07-01T00:00:00+00:00').add(10, 'minutes');
+    await createAuction({endTimestamp: endTimestamp});
+    let firstAuction = await auctionManager.auctionList(0);
+    const amountBid = web3.utils.toWei('5');
+    await auctionManager.placeBid(firstAuction.id, amountBid, buyer, {
+      from: buyer,
+      value: amountBid
+    })
+  })
+
+  it('should not place bid if bid lower than prev bid', async () => {
+    const endTimestamp = moment('2021-07-01T00:00:00+00:00').add(10, 'minutes');
+    await createAuction({endTimestamp: endTimestamp});
+    let firstAuction = await auctionManager.auctionList(0);
+    assert.equal(firstAuction.bestBid.buyer.toString(), '0x0000000000000000000000000000000000000000');
+    const amountBid = web3.utils.toWei('5');
+    await debug(
+        auctionManager.placeBid(firstAuction.id, amountBid, buyer, {
+          from: buyer,
+          value: amountBid
+        })
+    );
+    firstAuction = await auctionManager.auctionList(0);
+    assert.equal(firstAuction.bestBid.amount, amountBid);
+    assert.equal(firstAuction.bestBid.buyer, buyer);
+    const amountBidLower = web3.utils.toWei('4');
+    await expectRevert(
+        auctionManager.placeBid(firstAuction.id, amountBidLower, buyer, {
+          from: buyer,
+          value: amountBidLower
+        }),
+        'your bid is not higher than previous best bid'
+    )
+  })
 
 });
