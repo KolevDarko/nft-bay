@@ -24,6 +24,8 @@ contract AuctionManager is ReentrancyGuard {
     Auction[] public auctionList;
 
     event AuctionCreated(address indexed seller, uint indexed auctionId, address indexed tokenAddress, uint tokenId);
+    event BidCreated(uint indexed auctionId, address indexed buyer, uint amount);
+    event BidRefund(uint indexed auctionId, address indexed buyer, uint amount);
 
     constructor(){}
 
@@ -56,7 +58,9 @@ contract AuctionManager is ReentrancyGuard {
         auctionList[auctionId] = a;
         if (prevBestBid.buyer != address(0)){
             refundBid(prevBestBid);
+            emit BidRefund(auctionId, prevBestBid.buyer, prevBestBid.amount);
         }
+        emit BidCreated(auctionId, bidder, amount);
     }
 
     function refundBid(Bid memory bid) private {

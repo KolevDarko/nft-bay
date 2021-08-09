@@ -7,7 +7,7 @@ const moment = require('moment');
 
 const TOKEN_URL = 'https://cryptodev.blog'
 
-contract('Auction', (accounts) => {
+contract('AuctionTiming', (accounts) => {
   let auctionManager, tokenMinter, snapshotId;
   const [owner, buyer] = [accounts[1], accounts[2]];
 
@@ -23,6 +23,40 @@ contract('Auction', (accounts) => {
     await timeMachine.revertToSnapshot(snapshotId);
   })
 
+  const createAuction = async (options) => {
+    options = options || {};
+    const minPrice = options.minPrice || web3.utils.toWei('1');
+    const endTimestamp = options.endTimestamp || moment('2021-06-01T00:00:00+00:00');
+    await tokenMinter.mintItem(owner, TOKEN_URL);
+    const tokenId = 1;
+    const creator = options.creator || owner;
+    return auctionManager.createAuction(minPrice, endTimestamp.unix(), tokenMinter.address, tokenId, {from: creator});
+  }
+
+
+  it('should not place bid if auction has expired', async () => {
+    const endTimestamp = moment('2021-06-01T00:10:00+00:00');
+    await createAuction({endTimestamp: endTimestamp});
+    const firstAuction = await auctionManager.auctionList(0);
+    assert(firstAuction.endTimestamp.toString() === endTimestamp.unix().toString(), 'timestamps dont match');
+    const amountBid = web3.utils.toWei('9');
+    await timeMachine.advanceTimeAndBlock(60 * 11);
+    await expectRevert(
+        auctionManager.placeBid(firstAuction.id, amountBid, buyer, {from: buyer, value: amountBid}),
+        'auction finished'
+    );
+  });
+})
+
+contract('Auction', (accounts) => {
+  let auctionManager, tokenMinter, snapshotId;
+  const [owner, buyer, buyer2] = [accounts[1], accounts[2], accounts[3]];
+
+  beforeEach(async () => {
+    auctionManager = await Auction.new();
+    tokenMinter = await TokenMinter.new();
+
+  });
 
   it('should mint token', async () => {
     let results = await tokenMinter.mintItem(owner, TOKEN_URL);
@@ -63,16 +97,6 @@ contract('Auction', (accounts) => {
     )
   })
 
-  const advanceBlockAtTime = async (time) => {
-    await web3.currentProvider.send(
-        {
-          jsonrpc: "2.0",
-          method: "evm_mine",
-          params: [time],
-          id: new Date().getTime(),
-        });
-  };
-
   it('should not place bid if incorrect amount provided', async () => {
     const endTimestamp = moment('2021-08-05T12:00:00');
     await createAuction({endTimestamp: endTimestamp});
@@ -97,19 +121,6 @@ contract('Auction', (accounts) => {
     );
   });
 
-  it('should not place bid if auction has expired', async () => {
-    const endTimestamp = moment('2021-06-01T00:00:00+00:00').add(10, 'minutes');
-    await createAuction({endTimestamp: endTimestamp});
-    const firstAuction = await auctionManager.auctionList(0);
-    assert(firstAuction.endTimestamp.toString() === endTimestamp.unix().toString(), 'timestamps dont match');
-    const amountBid = web3.utils.toWei('9');
-    await timeMachine.advanceTimeAndBlock(60 * 11);
-    await expectRevert(
-        auctionManager.placeBid(firstAuction.id, amountBid, buyer, {from: buyer, value: amountBid}),
-        'auction finished'
-    );
-  });
-
   it('should place bid', async () => {
     const endTimestamp = moment('2021-07-01T00:00:00+00:00').add(10, 'minutes');
     await createAuction({endTimestamp: endTimestamp});
@@ -127,12 +138,10 @@ contract('Auction', (accounts) => {
     let firstAuction = await auctionManager.auctionList(0);
     assert.equal(firstAuction.bestBid.buyer.toString(), '0x0000000000000000000000000000000000000000');
     const amountBid = web3.utils.toWei('5');
-    await debug(
-        auctionManager.placeBid(firstAuction.id, amountBid, buyer, {
-          from: buyer,
-          value: amountBid
-        })
-    );
+    await auctionManager.placeBid(firstAuction.id, amountBid, buyer, {
+      from: buyer,
+      value: amountBid
+    });
     firstAuction = await auctionManager.auctionList(0);
     assert.equal(firstAuction.bestBid.amount, amountBid);
     assert.equal(firstAuction.bestBid.buyer, buyer);
@@ -145,5 +154,29 @@ contract('Auction', (accounts) => {
         'your bid is not higher than previous best bid'
     )
   })
+
+  it('should refund previous bid if there is better one', async () => {
+    const endTimestamp = moment('2021-07-01T00:00:00+00:00').add(10, 'minutes');
+    await createAuction({endTimestamp: endTimestamp});
+    let firstAuction = await auctionManager.auctionList(0);
+    assert.equal(firstAuction.bestBid.buyer.toString(), '0x0000000000000000000000000000000000000000');
+    const firstBidAmount = web3.utils.toWei('8');
+    await auctionManager.placeBid(firstAuction.id, firstBidAmount, buyer, {
+      from: buyer,
+      value: firstBidAmount
+    });
+    firstAuction = await auctionManager.auctionList(0);
+    assert.equal(firstAuction.bestBid.amount, firstBidAmount);
+    assert.equal(firstAuction.bestBid.buyer, buyer);
+    const secondBidAmount = web3.utils.toWei('19');
+    let result = auctionManager.placeBid(firstAuction.id, secondBidAmount, buyer2, {
+      from: buyer2,
+      value: secondBidAmount
+    })
+    firstAuction = await auctionManager.auctionList(0);
+    assert.equal(firstAuction.bestBid.buyer, buyer2);
+    assert.equal(firstAuction.bestBid.amount, secondBidAmount);
+  })
+
 
 });
