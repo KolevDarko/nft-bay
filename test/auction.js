@@ -203,7 +203,7 @@ contract('Auction', (accounts) => {
     )
   });
 
-  it('auction can be claimed by bid winner', async () => {
+  it('auction can be claimed by seller', async () => {
     await createAuction({endTimestamp: currentTime.add(10, 'minutes')});
     let firstAuction = await auctionManager.auctionList(0);
     const firstBidAmount = web3.utils.toWei('8');
@@ -212,9 +212,12 @@ contract('Auction', (accounts) => {
       value: firstBidAmount
     });
     await timeMachine.advanceTimeAndBlock(60 * 15);
+    const firstBalance = await web3.eth.getBalance(owner);
     await auctionManager.claimAuction(firstAuction.id, {from: owner});
     let newOwner = await tokenMinter.ownerOf(firstAuction.tokenId);
     assert.equal(newOwner, buyer, 'buyer is not owner after claiming auction');
+    const secondBalance = await web3.eth.getBalance(owner);
+    assert.equal(Number.parseInt(secondBalance), Number.parseInt(firstBalance) + Number.parseInt(firstAuction.bestBid.amount), 'seller did not receive correct funds');
   })
 
 });
