@@ -24,6 +24,7 @@ contract AuctionManager is ReentrancyGuard {
     Auction[] public auctionList;
 
     event AuctionCreated(address indexed seller, uint indexed auctionId, address indexed tokenAddress, uint tokenId);
+    event AuctionClaimed(uint indexed auctionId, address indexed seller, address indexed bidder);
     event BidCreated(uint indexed auctionId, address indexed buyer, uint amount);
     event BidRefund(uint indexed auctionId, address indexed buyer, uint amount);
 
@@ -73,11 +74,21 @@ contract AuctionManager is ReentrancyGuard {
 
     function claimAuction(uint auctionId) external {
         require(auctionList[auctionId].endTimestamp < block.timestamp, 'auction is not finished yet');
-        require(auctionList[auctionId].bestBid.buyer == msg.sender, 'you did not win this auction');
+        require(auctionList[auctionId].bestBid.buyer == msg.sender || auctionList[auctionId].seller == msg.sender,
+            'you did not win this auction');
 //        transfer token to buyer
-        Auction memory a = auctionList[auctionId];
-        require(a.claimed == false, 'auction already claimed');
-        a.claimed = true;
-        auctionList[auctionId].seller.transfer(a.bestBid.amount);
+        require(auctionList[auctionId].claimed == false, 'auction already claimed');
+        auctionList[auctionId].claimed = true;
+        auctionList[auctionId].seller.transfer(auctionList[auctionId].bestBid.amount);
+        auctionList[auctionId].token.safeTransferFrom(
+            auctionList[auctionId].seller,
+            auctionList[auctionId].bestBid.buyer,
+            auctionList[auctionId].tokenId
+        );
+        emit AuctionClaimed(auctionId, auctionList[auctionId].seller, auctionList[auctionId].bestBid.buyer);
+    }
+
+    function getTime() public view returns (uint256) {
+        return block.timestamp;
     }
 }

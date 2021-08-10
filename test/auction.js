@@ -8,13 +8,13 @@ const moment = require('moment');
 const TOKEN_URL = 'https://cryptodev.blog'
 
 contract('AuctionTiming', (accounts) => {
-  let auctionManager, tokenMinter, snapshotId;
+  let auctionManager, tokenMinter, snapshotId, currentTime;
   const [owner, buyer] = [accounts[1], accounts[2]];
-
   beforeEach(async () => {
     auctionManager = await Auction.new();
     tokenMinter = await TokenMinter.new();
-
+    currentTime = await auctionManager.getTime();
+    // console.log(`Before time is ${currentTime}`)
     let snapshot = await timeMachine.takeSnapshot();
     snapshotId = snapshot['result'];
   });
@@ -35,7 +35,8 @@ contract('AuctionTiming', (accounts) => {
 
 
   it('should not place bid if auction has expired', async () => {
-    const endTimestamp = moment('2021-06-01T00:10:00+00:00');
+    const endTimestamp = moment(Number.parseInt(currentTime) * 1000 + 5000);
+    console.log(`Auction end ts is ${endTimestamp.toISOString()}`);
     await createAuction({endTimestamp: endTimestamp});
     const firstAuction = await auctionManager.auctionList(0);
     assert(firstAuction.endTimestamp.toString() === endTimestamp.unix().toString(), 'timestamps dont match');
@@ -49,14 +50,22 @@ contract('AuctionTiming', (accounts) => {
 })
 
 contract('Auction', (accounts) => {
-  let auctionManager, tokenMinter, snapshotId;
+  let auctionManager, tokenMinter, snapshotId, currentTime;
   const [owner, buyer, buyer2] = [accounts[1], accounts[2], accounts[3]];
 
   beforeEach(async () => {
     auctionManager = await Auction.new();
     tokenMinter = await TokenMinter.new();
-
+    let blockTs = await auctionManager.getTime();
+    currentTime = moment(blockTs * 1000);
+    // console.log(`Before time is ${currentTime}`)
+    let snapshot = await timeMachine.takeSnapshot();
+    snapshotId = snapshot['result'];
   });
+
+  afterEach(async () => {
+    await timeMachine.revertToSnapshot(snapshotId);
+  })
 
   it('should mint token', async () => {
     let results = await tokenMinter.mintItem(owner, TOKEN_URL);
@@ -67,9 +76,10 @@ contract('Auction', (accounts) => {
   const createAuction = async (options) => {
     options = options || {};
     const minPrice = options.minPrice || web3.utils.toWei('1');
-    const endTimestamp = options.endTimestamp || moment('2021-06-01T00:00:00+00:00');
+    const endTimestamp = options.endTimestamp || moment('2021-06-01T00:01:00+00:00');
     await tokenMinter.mintItem(owner, TOKEN_URL);
     const tokenId = 1;
+    await tokenMinter.approve(auctionManager.address, tokenId, {from: owner});
     const creator = options.creator || owner;
     return auctionManager.createAuction(minPrice, endTimestamp.unix(), tokenMinter.address, tokenId, {from: creator});
   }
@@ -169,7 +179,7 @@ contract('Auction', (accounts) => {
     assert.equal(firstAuction.bestBid.amount, firstBidAmount);
     assert.equal(firstAuction.bestBid.buyer, buyer);
     const secondBidAmount = web3.utils.toWei('19');
-    let result = auctionManager.placeBid(firstAuction.id, secondBidAmount, buyer2, {
+    auctionManager.placeBid(firstAuction.id, secondBidAmount, buyer2, {
       from: buyer2,
       value: secondBidAmount
     })
@@ -178,5 +188,33 @@ contract('Auction', (accounts) => {
     assert.equal(firstAuction.bestBid.amount, secondBidAmount);
   })
 
+  it('auction can not be claimed if not expired', async () => {
+    const endTimestamp = moment('2021-09-01T00:00:00+00:00');
+    await createAuction({endTimestamp: endTimestamp});
+    let firstAuction = await auctionManager.auctionList(0);
+    const firstBidAmount = web3.utils.toWei('8');
+    await auctionManager.placeBid(firstAuction.id, firstBidAmount, buyer, {
+      from: buyer,
+      value: firstBidAmount
+    });
+    await expectRevert(
+        auctionManager.claimAuction(firstAuction.id, {from: owner}),
+        'auction is not finished yet'
+    )
+  });
+
+  it('auction can be claimed by bid winner', async () => {
+    await createAuction({endTimestamp: currentTime.add(10, 'minutes')});
+    let firstAuction = await auctionManager.auctionList(0);
+    const firstBidAmount = web3.utils.toWei('8');
+    await auctionManager.placeBid(firstAuction.id, firstBidAmount, buyer, {
+      from: buyer,
+      value: firstBidAmount
+    });
+    await timeMachine.advanceTimeAndBlock(60 * 15);
+    await auctionManager.claimAuction(firstAuction.id, {from: owner});
+    let newOwner = await tokenMinter.ownerOf(firstAuction.tokenId);
+    assert.equal(newOwner, buyer, 'buyer is not owner after claiming auction');
+  })
 
 });
