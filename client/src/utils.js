@@ -7,7 +7,7 @@ const getWeb3 = () => {
 
 const getAuction = async web3 => {
   const networkId = await web3.eth.net.getId();
-  const deployedNetwork = AuctionManager.networs[networkId];
+  const deployedNetwork = AuctionManager.networks[networkId];
   return new web3.eth.Contract(
       AuctionManager.abi,
       deployedNetwork && deployedNetwork.address

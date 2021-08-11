@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {getWeb3, getAuction} from "./utils.js";
+import Header from './Header';
 
 function App() {
   const [web3, setWeb3] = useState(undefined);
@@ -31,7 +32,8 @@ function App() {
 
   return (
     <div>
-      NftBay
+      <h1>Nft Bay</h1>
+      <Header auctions={auctionList} />
     </div>
   );
 }
