@@ -91,4 +91,8 @@ contract AuctionManager is ReentrancyGuard {
     function getTime() public view returns (uint256) {
         return block.timestamp;
     }
+
+    function getAuctions() public view returns(Auction[] memory) {
+        return auctionList;
+    }
 }
