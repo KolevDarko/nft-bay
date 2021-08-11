@@ -1,10 +1,13 @@
 import React from "react";
 
 function Header({auctions}) {
+
   return (
       <header>
         <ul>
-          <li>Auctions: {auctions.length} </li>
+          {auctions.map((auction) => (
+              <li>ID: {auction.id}, MinPrice: {auction.minPrice}, Ending: {auction.endTimestamp}, Token: {auction.token}, TokenId: {auction.tokenId}</li>
+          ))}
         </ul>
       </header>
   )
