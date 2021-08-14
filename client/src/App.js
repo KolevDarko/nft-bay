@@ -2,6 +2,7 @@ import React, {useEffect, useState} from "react";
 import {getWeb3, getAuction} from "./utils.js";
 import Header from './Header';
 import NewAuction from './NewAuction';
+import Sidebar from "./Sidebar";
 
 function App() {
   const [web3, setWeb3] = useState(undefined);
@@ -32,7 +33,7 @@ function App() {
     ).send({from: accounts[0], gas: 3000000});
   }
 
-  if(
+  if (
       typeof web3 === 'undefined'
       || typeof accounts === 'undefined'
       || typeof auctionManager === 'undefined'
@@ -41,12 +42,24 @@ function App() {
   }
 
   return (
-    <div>
-      <h1>Nft Bay</h1>
-      <Header auctions={auctionList} />
-      <NewAuction createAuction={createAuction} />
-    </div>
-  );
+      <div id='App'>
+        <h1>Nft(e)Bay</h1>
+        <Header
+            auctions={auctionList}
+        />
+        <main className="container-fluid">
+          <div className="row">
+            <div className="col-sm-4 first-col">
+              <Sidebar />
+            </div>
+            <div className="col-sm-8">
+              <h3>Main Section</h3>
+              <NewAuction createAuction={createAuction}/>
+            </div>
+          </div>
+        </main>
+      </div>
+);
 }
 
 export default App;

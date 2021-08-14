@@ -17,12 +17,12 @@ function NewAuction({createAuction}) {
   return (
       <div className="row col-md-7">
         <div className="card">
-          <div className="card-header">
+          <h2 className="card-title">
             Create Auction
-          </div>
+          </h2>
           <div className="card-body">
             <form onSubmit={(e) => submit(e)}>
-              <div className="form-group">
+              <div className="form-group row">
                 <label htmlFor="minPrice">Min Bid</label>
                 <input className="form-control"
                        id="minPrice"
@@ -30,7 +30,7 @@ function NewAuction({createAuction}) {
                        onChange={e => updateAuction(e, 'minPrice')}
                 />
               </div>
-              <div className="form-group">
+              <div className="form-group row">
                 <label htmlFor="endTimestamp">End Timestamp</label>
                 <input className="form-control"
                        id="endTimestamp"
