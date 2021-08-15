@@ -1,19 +1,19 @@
 import React from "react";
+import { Link } from 'react-router-dom';
 
 function Sidebar() {
-
   return (
       <div id="sidebar" className="sidebar d-flex flex-column flex-shrink-0 p-3 bg-light" style={{width: "280px"}}>
         <ul className="nav nav-pills flex-column mb-auto">
           <li className="nav-item">
-            <a href="#" className="nav-link active" aria-current="page">
-              Active Auctions
-            </a>
+            <Link to="/" className="nav-link">
+              All Auctions
+            </Link>
           </li>
           <li>
-            <a href="#" className="nav-link link-dark">
+            <Link to="/new-auction" className="nav-link">
               New Auction
-            </a>
+            </Link>
           </li>
           <li>
             <a href="#" className="nav-link link-dark">

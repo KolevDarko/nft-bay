@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from "react";
-import {getWeb3, getAuction} from "./utils.js";
-import Header from './Header';
-import NewAuction from './NewAuction';
+import {getAuction, getWeb3} from "./utils.js";
+import NewAuction from "./NewAuction";
+import AuctionList from "./AuctionList";
 import Sidebar from "./Sidebar";
+import {BrowserRouter, Link, Route, Switch} from "react-router-dom";
 
 function App() {
   const [web3, setWeb3] = useState(undefined);
@@ -42,24 +43,29 @@ function App() {
   }
 
   return (
-      <div id='App'>
-        <h1>Nft(e)Bay</h1>
-        <Header
-            auctions={auctionList}
-        />
-        <main className="container-fluid">
-          <div className="row">
-            <div className="col-sm-4 first-col">
-              <Sidebar />
+      <BrowserRouter>
+        <div id="app">
+          <h1>Nft(e)Bay</h1>
+          <main className="container-fluid">
+            <div className="row">
+              <div className="col-sm-4">
+                <Sidebar/>
+              </div>
+              <div className="col-sm-8">
+                <Switch>
+                  <Route path="/new-auction">
+                    <NewAuction createAuction={createAuction}/>
+                  </Route>
+                  <Route path="/">
+                    <AuctionList auctionList={auctionList}/>
+                  </Route>
+                </Switch>
+              </div>
             </div>
-            <div className="col-sm-8">
-              <h3>Main Section</h3>
-              <NewAuction createAuction={createAuction}/>
-            </div>
-          </div>
-        </main>
-      </div>
-);
+          </main>
+        </div>
+      </BrowserRouter>
+  );
 }
 
 export default App;
