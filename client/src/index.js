@@ -2,11 +2,11 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './scss/index.scss';
-import App from './App';
+import LoadingContainer from './LoadingContainer';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <LoadingContainer />
   </React.StrictMode>,
   document.getElementById('root')
 );

@@ -1,8 +1,16 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 
 
-function AuctionList({auctionList}) {
+function AuctionList({auctionManager}) {
+  const [auctionList, setAuctionList] = useState([]);
 
+  useEffect(() => {
+    const init = async () => {
+      const auctions = await auctionManager.methods.getAuctions().call();
+      setAuctionList(auctions);
+    };
+    init();
+  });
   return (
       <div>
         <h2>Auction List</h2>

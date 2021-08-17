@@ -1,12 +1,23 @@
 import React, {useState} from 'react';
 
 
-function NewAuction({createAuction}) {
+function NewAuction({auctionManager, web3, creatorAccount}) {
   const [auction, setAuction] = useState(undefined);
 
-  const submit = e => {
+  const createAuction = async (auction) => {
+    await auctionManager.methods.createAuction(
+        web3.utils.toWei(auction.minPrice),
+        auction.endTimestamp,
+        auction.tokenAddress,
+        auction.tokenId
+    ).send({from: creatorAccount, gas: 3000000});
+  }
+
+  const submit = async (e) => {
     e.preventDefault();
-    createAuction(auction);
+    await createAuction(auction);
+  //  todo redirect to auctionList
+    console.log('Auction created')
   }
 
   const updateAuction = (e, field) => {
@@ -27,6 +38,7 @@ function NewAuction({createAuction}) {
                 <input className="form-control"
                        id="minPrice"
                        type="number"
+                       step="any"
                        onChange={e => updateAuction(e, 'minPrice')}
                 />
               </div>
