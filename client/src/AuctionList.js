@@ -37,7 +37,7 @@ function AuctionList({auctionManager, web3, activeAccount}) {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();p
+    e.preventDefault();
     const auctionId = Number.parseInt(e.target.dataset.auctionId);
     const bidAmount = web3.utils.toWei(myBid);
     await auctionManager.methods.placeBid(auctionId, bidAmount, activeAccount).send({from: activeAccount, value: bidAmount});
