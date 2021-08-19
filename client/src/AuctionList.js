@@ -4,14 +4,21 @@ import ERC721 from './contracts/ERC721.json';
 function AuctionList({auctionManager, web3, activeAccount}) {
   const [auctionDataList, setAuctionDataList] = useState([]);
   const [myBid, setMyBid] = useState(0);
+  const [listener, setListener] = useState(undefined);
+  const [auctionIds, setAuctionIds] = useState(new Set());
 
   useEffect(() => {
     const init = async () => {
       const auctions = await auctionManager.methods.getAuctions().call();
       const auctionFullData = await getFullAuctionData(auctions);
+      const auctionIds = new Set(auctions.map((auction) => (auction.id)));
+      setAuctionIds(auctionIds);
       setAuctionDataList(auctionFullData);
+      listenToAuctions();
     };
     init();
+  }, [], () => {
+    listener.unsubscribe();
   });
 
   const getFullAuctionData = async (auctions) => {
@@ -34,6 +41,39 @@ function AuctionList({auctionManager, web3, activeAccount}) {
         bestBidEth: bestBidEth
       }
     }));
+  }
+
+  const listenToAuctions = () => {
+    const listener = auctionManager.events.AuctionCreated(
+        {
+          fromBlock: 0
+        })
+        .on('data', async (newAuction) => {
+          console.log('NEW AUCTION');
+          if(auctionIds.has(newAuction.returnValues.auctionId)) return;
+          auctionIds.add(newAuction.returnValues.auctionId);
+          setAuctionIds(auctionIds);
+          let nftContract = new web3.eth.Contract(
+              ERC721.abi,
+              newAuction.returnValues.tokenAddress
+          );
+          let auction = await auctionManager.methods.auctionList(newAuction.returnValues.auctionId).call();
+          const tokenUrl = await nftContract.methods.tokenURI(Number.parseInt(auction.tokenId.toString())).call();
+          const tokenName = await nftContract.methods.name().call();
+          const metadata = {name: 'dare', description: 'asdf2'}
+          const minBidEth = web3.utils.fromWei(auction.minPrice, 'ether');
+          const bestBidEth = web3.utils.fromWei(auction.bestBid.amount, 'ether');
+          let newAuctionData = {
+            tokenUrl: tokenUrl,
+            tokenName: tokenName,
+            auction: auction,
+            metadata: metadata,
+            minBidEth: minBidEth,
+            bestBidEth: bestBidEth
+          }
+          setAuctionDataList(auctionDataList => ([...auctionDataList, newAuctionData]));
+        });
+    setListener(listener);
   }
 
   const handleSubmit = async (e) => {
