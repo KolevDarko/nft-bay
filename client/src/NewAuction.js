@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 
 
-function NewAuction({auctionManager, web3, creatorAccount}) {
+function NewAuction({auctionManager, web3, activeAccount}) {
   const [auction, setAuction] = useState(undefined);
 
   const createAuction = async (auction) => {
@@ -10,7 +10,7 @@ function NewAuction({auctionManager, web3, creatorAccount}) {
         auction.endTimestamp,
         auction.tokenAddress,
         auction.tokenId
-    ).send({from: creatorAccount, gas: 3000000});
+    ).send({from: activeAccount, gas: 3000000});
   }
 
   const submit = async (e) => {

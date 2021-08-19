@@ -5,7 +5,8 @@ import Sidebar from "./Sidebar";
 import {BrowserRouter, Route, Switch} from "react-router-dom";
 
 function App({web3, accounts, auctionManager}) {
-
+  const activeAccount = accounts[0];
+  console.log('Total accounts are', accounts.length);
   return (
       <BrowserRouter>
         <div id="app">
@@ -18,10 +19,10 @@ function App({web3, accounts, auctionManager}) {
               <div className="col-sm-8">
                 <Switch>
                   <Route path="/new-auction">
-                    <NewAuction auctionManager={auctionManager} web3={web3} creatorAccount={accounts[0]}/>
+                    <NewAuction auctionManager={auctionManager} web3={web3} activeAccount={activeAccount}/>
                   </Route>
                   <Route path="/">
-                    <AuctionList auctionManager={auctionManager}/>
+                    <AuctionList auctionManager={auctionManager} web3={web3} activeAccount={activeAccount}/>
                   </Route>
                 </Switch>
               </div>
