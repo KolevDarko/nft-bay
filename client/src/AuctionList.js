@@ -1,6 +1,8 @@
 import React, {useEffect, useState} from 'react';
 import ERC721 from './contracts/ERC721.json';
 
+const moment = require('moment');
+
 function AuctionList({auctionManager, web3, activeAccount}) {
   const [auctionDataList, setAuctionDataList] = useState([]);
   const [myBid, setMyBid] = useState(0);
@@ -38,7 +40,9 @@ function AuctionList({auctionManager, web3, activeAccount}) {
         auction: auction,
         metadata: metadata,
         minBidEth: minBidEth,
-        bestBidEth: bestBidEth
+        bestBidEth: bestBidEth,
+        bestBidder: auction.bestBid.buyer,
+        endsOn: formatTimestamp(auction.endTimestamp)
       }
     }));
   }
@@ -50,7 +54,7 @@ function AuctionList({auctionManager, web3, activeAccount}) {
         })
         .on('data', async (newAuction) => {
           console.log('NEW AUCTION');
-          if(auctionIds.has(newAuction.returnValues.auctionId)) return;
+          if (auctionIds.has(newAuction.returnValues.auctionId)) return;
           debugger;
           auctionIds.add(newAuction.returnValues.auctionId);
           setAuctionIds(auctionIds);
@@ -70,18 +74,39 @@ function AuctionList({auctionManager, web3, activeAccount}) {
             auction: auction,
             metadata: metadata,
             minBidEth: minBidEth,
-            bestBidEth: bestBidEth
+            bestBidder: auction.bestBid.buyer,
+            bestBidEth: bestBidEth,
+            endsOn: formatTimestamp(auction.endTimestamp)
           }
           setAuctionDataList(auctionDataList => ([...auctionDataList, newAuctionData]));
         });
     setListener(listener);
   }
 
+  const formatTimestamp = (timestamp) => {
+    return moment(Number.parseInt(timestamp) * 1000).toString()
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const auctionId = Number.parseInt(e.target.dataset.auctionId);
     const bidAmount = web3.utils.toWei(myBid);
-    await auctionManager.methods.placeBid(auctionId, bidAmount, activeAccount).send({from: activeAccount, value: bidAmount});
+    await auctionManager.methods.placeBid(auctionId, bidAmount, activeAccount).send({
+      from: activeAccount,
+      value: bidAmount
+    });
+  }
+
+  const handleClaimAuction = async (e) => {
+    e.preventDefault();
+    const auctionId = Number.parseInt(e.target.dataset.auctionId);
+    await auctionManager.methods.claimAuction(auctionId).send({from: activeAccount});
+  }
+
+  const userCanClaimAuction = async (auctionId) => {
+    const auction = await auctionManager.methods.auctionList(auctionId).call();
+    const auctionEnd = moment(Number.parseInt(auction.endTimestamp) * 1000);
+    return auctionEnd < moment() && (auction.seller === activeAccount || auction.bestBid.buyer === activeAccount)
   }
 
   return (
@@ -93,7 +118,9 @@ function AuctionList({auctionManager, web3, activeAccount}) {
                 <h2 className="card-title">
                   Auction #{auctionData.auction.id} - {auctionData.metadata.name}
                 </h2>
-                <img width="200px" className="card-img-top" src="https://res.cloudinary.com/nifty-gateway/image/upload/v1613918640/A/TrevorJones/The_Bitcoin_Angel_Open_Edition_2_dzsp3b.jpg" alt="token image"/>
+                <img width="200px" className="card-img-top"
+                     src="https://res.cloudinary.com/nifty-gateway/image/upload/v1613918640/A/TrevorJones/The_Bitcoin_Angel_Open_Edition_2_dzsp3b.jpg"
+                     alt="token image"/>
                 <div className="card-body">
                   <div className="info-title">
                     {auctionData.metadata.name} #{auctionData.auction.tokenId}
@@ -105,24 +132,33 @@ function AuctionList({auctionManager, web3, activeAccount}) {
                     <span>Min Bid: {auctionData.minBidEth} ETH</span>
                   </div>
                   <div className="info">
-                    <span>Best Bid: {auctionData.bestBidEth} ETH</span>
+                    <span>Best Bid: {auctionData.bestBidEth} ETH. Bidder: {auctionData.bestBidder}</span>
                   </div>
                   <div className="info">
-                    <span>Ends On: {auctionData.auction.endTimestamp}</span>
+                    <span>Ends On: {auctionData.endsOn}</span>
                   </div>
                   <div className="info">
                     <span>URL: {auctionData.tokenUrl}</span>
                   </div>
                   <div className="info">
-                    <span>UToken address: {auctionData.auction.token}</span>
+                    <span>Token address: {auctionData.auction.token}</span>
                   </div>
+                  {auctionData.auction.claimed ? (<h2>Auction finished</h2>) : (
                   <form className="form-inline" onSubmit={handleSubmit} data-auction-id={auctionData.auction.id}>
                     <div className="form-group mx-sm-3 mb-2">
                       <label htmlFor="bidInput" className="sr-only">New Bid</label>
-                      <input type="number" step="any" value={myBid} onChange={e => setMyBid(e.target.value)} className="form-control" id="bidInput" placeholder="Bid in ETH" />
+                      <input type="number" step="any" value={myBid} onChange={e => setMyBid(e.target.value)}
+                             className="form-control" id="bidInput" placeholder="Bid in ETH"/>
                     </div>
                     <button type="submit" className="btn btn-primary mb-2">Place Bid</button>
-                  </form>
+                  </form>)}
+                  {!auctionData.auction.claimed && userCanClaimAuction(auctionData.auction.id) ? (
+                      <form className="form-inline" onSubmit={handleClaimAuction} data-auction-id={auctionData.auction.id}>
+                        <div className="form-group mb-2">
+                          <button type="submit" className="btn btn-success mb-2">Claim Auction</button>
+                        </div>
+                      </form>) : null}
+
                 </div>
               </div>
           ))}

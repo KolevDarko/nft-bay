@@ -76,7 +76,6 @@ contract AuctionManager is ReentrancyGuard {
         require(auctionList[auctionId].endTimestamp < block.timestamp, 'auction is not finished yet');
         require(auctionList[auctionId].bestBid.buyer == msg.sender || auctionList[auctionId].seller == msg.sender,
             'you did not win this auction');
-//        transfer token to buyer
         require(auctionList[auctionId].claimed == false, 'auction already claimed');
         auctionList[auctionId].claimed = true;
         auctionList[auctionId].seller.transfer(auctionList[auctionId].bestBid.amount);
