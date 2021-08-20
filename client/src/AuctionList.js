@@ -55,7 +55,6 @@ function AuctionList({auctionManager, web3, activeAccount}) {
         .on('data', async (newAuction) => {
           console.log('NEW AUCTION');
           if (auctionIds.has(newAuction.returnValues.auctionId)) return;
-          debugger;
           auctionIds.add(newAuction.returnValues.auctionId);
           setAuctionIds(auctionIds);
           let nftContract = new web3.eth.Contract(

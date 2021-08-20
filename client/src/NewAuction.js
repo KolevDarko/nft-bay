@@ -19,7 +19,6 @@ function NewAuction({auctionManager, web3, activeAccount}) {
         ERC721.abi,
         tokenAddress
     );
-    debugger;
     await nftContract.methods.approve(auctionManager._address, tokenId).send({from: activeAccount});
   }
 
@@ -29,7 +28,6 @@ function NewAuction({auctionManager, web3, activeAccount}) {
     await approveToken(auction.token, auction.tokenId);
     //Then create the auction itself
     await createAuction(auction);
-    console.log('Auction created')
   }
 
   const updateAuction = (e, field) => {
