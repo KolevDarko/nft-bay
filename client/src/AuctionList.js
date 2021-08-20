@@ -14,7 +14,7 @@ function AuctionList({auctionManager, web3, activeAccount}) {
       const auctionIds = new Set(auctions.map((auction) => (auction.id)));
       setAuctionIds(auctionIds);
       setAuctionDataList(auctionFullData);
-      listenToAuctions();
+      listenToAuctions(auctionIds);
     };
     init();
   }, [], () => {
@@ -27,7 +27,7 @@ function AuctionList({auctionManager, web3, activeAccount}) {
           ERC721.abi,
           auction.token
       );
-      const tokenUrl = await nftContract.methods.tokenURI(Number.parseInt(auction.tokenId.toString())).call();
+      const tokenUrl = await nftContract.methods.tokenURI(Number.parseInt(auction.tokenId)).call();
       const tokenName = await nftContract.methods.name().call();
       const metadata = {name: 'dare', description: 'asdf'}
       const minBidEth = web3.utils.fromWei(auction.minPrice, 'ether');
@@ -43,7 +43,7 @@ function AuctionList({auctionManager, web3, activeAccount}) {
     }));
   }
 
-  const listenToAuctions = () => {
+  const listenToAuctions = (auctionIds) => {
     const listener = auctionManager.events.AuctionCreated(
         {
           fromBlock: 0
@@ -51,6 +51,7 @@ function AuctionList({auctionManager, web3, activeAccount}) {
         .on('data', async (newAuction) => {
           console.log('NEW AUCTION');
           if(auctionIds.has(newAuction.returnValues.auctionId)) return;
+          debugger;
           auctionIds.add(newAuction.returnValues.auctionId);
           setAuctionIds(auctionIds);
           let nftContract = new web3.eth.Contract(
@@ -111,6 +112,9 @@ function AuctionList({auctionManager, web3, activeAccount}) {
                   </div>
                   <div className="info">
                     <span>URL: {auctionData.tokenUrl}</span>
+                  </div>
+                  <div className="info">
+                    <span>UToken address: {auctionData.auction.token}</span>
                   </div>
                   <form className="form-inline" onSubmit={handleSubmit} data-auction-id={auctionData.auction.id}>
                     <div className="form-group mx-sm-3 mb-2">

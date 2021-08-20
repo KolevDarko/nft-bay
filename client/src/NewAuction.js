@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import ERC721 from "./contracts/ERC721.json";
 
 
 function NewAuction({auctionManager, web3, activeAccount}) {
@@ -8,15 +9,26 @@ function NewAuction({auctionManager, web3, activeAccount}) {
     await auctionManager.methods.createAuction(
         web3.utils.toWei(auction.minPrice),
         auction.endTimestamp,
-        auction.tokenAddress,
+        auction.token,
         auction.tokenId
     ).send({from: activeAccount, gas: 3000000});
   }
 
+  const approveToken = async (tokenAddress, tokenId) => {
+    const nftContract = new web3.eth.Contract(
+        ERC721.abi,
+        tokenAddress
+    );
+    debugger;
+    await nftContract.methods.approve(auctionManager._address, tokenId).send({from: activeAccount});
+  }
+
   const submit = async (e) => {
     e.preventDefault();
+    //First approve the token to be auctioned
+    await approveToken(auction.token, auction.tokenId);
+    //Then create the auction itself
     await createAuction(auction);
-  //  todo redirect to auctionList
     console.log('Auction created')
   }
 
@@ -55,7 +67,7 @@ function NewAuction({auctionManager, web3, activeAccount}) {
                 <input className="form-control"
                        id="tokenAddress"
                        type="text"
-                       onChange={e => updateAuction(e, 'tokenAddress')}
+                       onChange={e => updateAuction(e, 'token')}
                 />
               </div>
               <div className="form-group">
