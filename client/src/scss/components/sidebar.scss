@@ -1,3 +1,15 @@
 #sidebar {
-  border: 2px solid #731DD8;
+  //border: 2px solid #731DD8;
+  .nav-item {
+    border: 2px solid #731DD8;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    :hover {
+      background: #731DD8;
+    }
+
+    .nav-link {
+      color: white;
+    }
+  }
 }

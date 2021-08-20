@@ -10,7 +10,7 @@ function App({web3, accounts, auctionManager}) {
   return (
       <BrowserRouter>
         <div id="app">
-          <h1>Nft(e)Bay</h1>
+          <h1 className='top-title'>Nft(e)Bay</h1>
           <main className="container-fluid">
             <div className="row">
               <div className="col-sm-4">

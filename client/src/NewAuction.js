@@ -62,7 +62,7 @@ function NewAuction({auctionManager, web3, activeAccount}) {
                        onChange={e => updateAuction(e, 'endTimestamp')}
                 />
               </div>
-              <div className="form-group">
+              <div className="form-group row">
                 <label htmlFor="tokenAddress">Nft Contract Address</label>
                 <input className="form-control"
                        id="tokenAddress"
@@ -70,7 +70,7 @@ function NewAuction({auctionManager, web3, activeAccount}) {
                        onChange={e => updateAuction(e, 'token')}
                 />
               </div>
-              <div className="form-group">
+              <div className="form-group row">
                 <label htmlFor="tokenId">Nft Token ID</label>
                 <input className="form-control"
                        id="tokenId"
@@ -78,8 +78,8 @@ function NewAuction({auctionManager, web3, activeAccount}) {
                        onChange={e => updateAuction(e, 'tokenId')}
                 />
               </div>
-              <div>
-                <button type="submit" className="btn btn-success">Submit</button>
+              <div className="row">
+                <button type="submit" className="btn btn-success mt-4">Submit</button>
               </div>
             </form>
           </div>

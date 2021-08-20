@@ -16,15 +16,21 @@ h3 {
   color: $white;
 }
 
+.top-title {
+  margin-left: 5%;
+}
+
 footer {
   font-size: 0.75rem;
-  background-color: $dimBlack; 
+  background-color: $dimBlack;
   color: $white;
   padding: 25px 15px;
+
   a {
     color: $black;
     font-weight: bold;
   }
+
   p {
     margin: 0;
   }

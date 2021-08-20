@@ -158,7 +158,6 @@ function AuctionList({auctionManager, web3, activeAccount}) {
                           <button type="submit" className="btn btn-success mb-2">Claim Auction</button>
                         </div>
                       </form>) : null}
-
                 </div>
               </div>
           ))}
