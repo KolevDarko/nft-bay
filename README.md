@@ -8,7 +8,7 @@ There is one main smart contract, AuctionManager and then there is also a sample
 The source code for the client dApp is contained in the /client directory.
 It is a ReactJS application bootstrapped with create-react-app.
 
-You need to run npm install separatelly, once in the root folder and second time in the client folder.
+You need to run npm install separately, once in the root folder and second time in the client folder.
 
 Deploy with: truffle migrate.
 
